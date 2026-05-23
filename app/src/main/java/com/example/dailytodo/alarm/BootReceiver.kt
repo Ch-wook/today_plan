@@ -1,0 +1,30 @@
+package com.example.dailytodo.alarm
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import com.example.dailytodo.domain.repository.AlarmRepository
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@AndroidEntryPoint
+class BootReceiver : BroadcastReceiver() {
+
+    @Inject lateinit var alarmRepository: AlarmRepository
+    @Inject lateinit var alarmScheduler: AlarmScheduler
+
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val alarms = alarmRepository.getAllAlarms().first()
+            alarms.filter { it.isEnabled }.forEach { alarm ->
+                alarmScheduler.schedule(alarm)
+            }
+        }
+    }
+}
